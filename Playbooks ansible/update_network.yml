@@ -1,0 +1,49 @@
+---
+- name: Update network configuration
+  hosts: cluster
+  become: yes
+  vars:
+    gateway: 192.168.0.1
+    dns_servers:
+      - 192.168.0.1
+      - 8.8.8.8
+    hosts_entries:
+      pc0: 192.168.0.240
+      pc1: 192.168.0.241
+      pc2: 192.168.0.242
+      pc3: 192.168.0.243
+      pc4: 192.168.0.244
+  tasks:
+    - name: Set host-specific IP
+      set_fact:
+        host_ip: "{{ hosts_entries[inventory_hostname] }}"
+    
+    - name: Update /etc/network/interfaces with new IPs and gateway
+      blockinfile:
+        path: /etc/network/interfaces
+        block: |
+          # The loopback network interface
+          auto lo
+          iface lo inet loopback
+          #The primary network interface
+          auto {{ ansible_default_ipv4.interface }}
+          iface {{ ansible_default_ipv4.interface }} inet static
+            address {{ host_ip }}
+            netmask 255.255.255.0
+            gateway {{ gateway }}
+            dns-nameservers {% for dns in dns_servers %}{{ dns }} {% endfor %}
+      notify: Restart networking
+
+    - name: Update /etc/hosts file for each host
+      blockinfile:
+        path: /etc/hosts
+        block: "{{ hosts_entries[item] }} {{ item }}"
+        marker: "# {mark} ANSIBLE MANAGED BLOCK {{ item }}"
+      loop: "{{ hosts_entries.keys() | list }}"
+      notify: Restart networking
+          
+  handlers:
+    - name: Restart networking
+      service:
+        name: networking
+        state: restarted

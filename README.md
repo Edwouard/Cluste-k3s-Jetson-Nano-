@@ -1,0 +1,1 @@
+Ce dépôt contient les fichiers de configuration et les scripts nécessaires pour déployer un cluster d'apprentissage automatique low-cost basé sur Kubernetes et des nœuds Nvidia Jetson Nano. Ce projet vise à fournir une solution accessible et reproductible pour les chercheurs et les étudiants en intelligence artificielle.
